@@ -237,7 +237,14 @@ const DATA = {
 const jan = DATA.jan;
 const feb = DATA.feb;
 
+function safeDiv(a,b){ return (!b || b===0) ? null : (a/b); }
 function totalRevenue(m){ return m.paid.revenue + m.renewals.revenue; }
+
+// ✅ Average check size per month (using NEW SALES revenue / NEW SALES count)
+function avgCheckNewSales(m){
+  const v = safeDiv(m.paid.revenue, m.paid.count);
+  return v;
+}
 
 const cum = {
   total_revenue: totalRevenue(jan) + totalRevenue(feb),
@@ -270,19 +277,23 @@ function renderCards(elId, cards){
   `).join('');
 }
 
+// February cards (✅ includes Avg check size)
 renderCards('kpiFeb', [
   ["Total revenue (Feb)", fmtMoney(totalRevenue(feb))],
   ["New revenue (Feb)", fmtMoney(feb.paid.revenue)],
   ["Renewals (Feb)", fmtMoney(feb.renewals.revenue)],
+  ["Avg check (Feb)", fmtMoney(avgCheckNewSales(feb))],
   ["Demo booked (Feb)", fmtInt(feb.funnel.booked_for_month)],
   ["Demo attended (Feb)", fmtInt(feb.funnel.attended)],
   ["Invoice → Paid (Feb)", fmtPct(feb.invoices.invoice_to_paid)]
 ]);
 
+// January cards (✅ includes Avg check size)
 renderCards('kpiJan', [
   ["Total revenue (Jan)", fmtMoney(totalRevenue(jan))],
   ["New revenue (Jan)", fmtMoney(jan.paid.revenue)],
   ["Renewals (Jan)", fmtMoney(jan.renewals.revenue)],
+  ["Avg check (Jan)", fmtMoney(avgCheckNewSales(jan))],
   ["Demo booked (Jan)", fmtInt(jan.funnel.booked_for_month)],
   ["Demo attended (Jan)", fmtInt(jan.funnel.attended)],
   ["Invoice → Paid (Jan)", fmtPct(jan.invoices.invoice_to_paid)]
@@ -296,8 +307,8 @@ renderCards('kpiCum', [
 ]);
 
 /** ===== UNIFIED AXES LIMITS (requested) ===== */
-const FUNNEL_X_MAX = 120;   // for horizontal funnel qty charts (both months)
-const VALUE_Y_MAX  = 6000;  // for vertical value charts (both months)
+const FUNNEL_X_MAX = 120;   // top funnel x-axis max
+const VALUE_Y_MAX  = 6000;  // bottom value y-axis max
 
 /** ===== FUNNEL CHARTS ===== */
 const funnelLabels = ['Demo booked', 'Demo attended', 'Quotations', 'Invoices', 'Sales'];
@@ -419,7 +430,7 @@ new Chart(document.getElementById('revenueSplit'),{
     },
     scales:{
       x:{stacked:true, ticks:{color:'rgba(255,255,255,.75)'}, grid:{color:'rgba(255,255,255,.08)'}},
-      y:{stacked:true, ticks:{color:'rgba(255,255,255,.75)'}, grid:{color:'rgba(255,255,255,.08)'}}
+      y:{stacked:true, ticks:{color:'rgba(255,255,255,.75)'}, grid:{color:'rgba(255,255,255,.08)'} }
     }
   }
 });
@@ -439,7 +450,7 @@ new Chart(document.getElementById('bookedChannels'),{
     plugins:{ legend:{labels:{color:'rgba(255,255,255,.85)'}} },
     scales:{
       x:{stacked:true, ticks:{color:'rgba(255,255,255,.75)'}, grid:{color:'rgba(255,255,255,.08)'}},
-      y:{stacked:true, ticks:{color:'rgba(255,255,255,.75)'}, grid:{color:'rgba(255,255,255,.08)'}}
+      y:{stacked:true, ticks:{color:'rgba(255,255,255,.75)'}, grid:{color:'rgba(255,255,255,.08)'} }
     }
   }
 });
@@ -476,6 +487,7 @@ const tableCols = [
   "Quotations qty","Quotations value (USD)",
   "Invoices qty","Invoices value (USD)",
   "Sales qty","Sales value (USD)",
+  "Avg check (USD)",
   "Renewals qty","Renewals value (USD)",
   "Total revenue (USD)","Marketing spend (USD)",
   "CAC","Invoice→Paid","Conversion","Churn"
@@ -492,6 +504,7 @@ const tableData = [
     "Invoices value (USD)": jan.invoices.value,
     "Sales qty": jan.paid.count,
     "Sales value (USD)": jan.paid.revenue,
+    "Avg check (USD)": avgCheckNewSales(jan),
     "Renewals qty": jan.renewals.paid_count,
     "Renewals value (USD)": jan.renewals.revenue,
     "Total revenue (USD)": totalRevenue(jan),
@@ -511,6 +524,7 @@ const tableData = [
     "Invoices value (USD)": feb.invoices.value,
     "Sales qty": feb.paid.count,
     "Sales value (USD)": feb.paid.revenue,
+    "Avg check (USD)": avgCheckNewSales(feb),
     "Renewals qty": feb.renewals.paid_count,
     "Renewals value (USD)": feb.renewals.revenue,
     "Total revenue (USD)": totalRevenue(feb),
@@ -541,7 +555,7 @@ function renderTable(){
       const v=row[c];
       const lc=c.toLowerCase();
 
-      if (lc.includes('usd') || lc.includes('revenue') || lc.includes('spend') || lc.includes('value') || lc.includes('cost')) {
+      if (lc.includes('usd') || lc.includes('revenue') || lc.includes('spend') || lc.includes('value') || lc.includes('avg check') || lc.includes('cost')) {
         td.textContent = (v===null || v===undefined) ? '–' : fmtMoney(v);
       } else if (lc.includes('invoice→paid') || lc.includes('conversion') || lc.includes('%')) {
         td.textContent = (v===null || v===undefined) ? '–' : fmtPct(v);
