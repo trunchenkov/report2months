@@ -36,12 +36,10 @@
       margin: 0 auto;
       padding: 12px 22px 44px;
     }
-    .section-title {
-      margin: 18px 4px 10px;
-      font-size: 13px;
-      color: var(--muted);
-      letter-spacing: 0.2px;
-      text-transform: uppercase;
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 14px;
     }
     .card {
       background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.04));
@@ -50,6 +48,17 @@
       box-shadow: var(--shadow);
       padding: 14px 14px;
       overflow: hidden;
+    }
+    .kpi-card { padding: 14px 16px; }
+    .kpi-label { color: var(--muted); font-size: 12px; margin-bottom: 6px; }
+    .kpi-value { font-size: 22px; font-weight: 700; letter-spacing: 0.2px; }
+
+    .section-title {
+      margin: 18px 4px 10px;
+      font-size: 13px;
+      color: var(--muted);
+      letter-spacing: 0.2px;
+      text-transform: uppercase;
     }
     .row {
       display:flex; justify-content:space-between; align-items:center; gap:10px;
@@ -74,6 +83,24 @@
       background: var(--accent);
       box-shadow: 0 0 0 4px rgba(195,83,234,0.18);
     }
+    .chart-wrap { height: 260px; }
+    .chart-wrap.small { height: 220px; }
+    .divider {
+      height: 1px;
+      background: rgba(255,255,255,0.10);
+      margin: 10px 0 8px;
+    }
+
+    .span-3 { grid-column: span 3; }
+    .span-5 { grid-column: span 5; }
+    .span-6 { grid-column: span 6; }
+    .span-7 { grid-column: span 7; }
+    .span-12 { grid-column: span 12; }
+
+    @media (max-width: 980px) {
+      .span-3,.span-5,.span-6,.span-7 { grid-column: span 12; }
+    }
+
     .funnel-grid {
       display:grid;
       grid-template-columns: 1fr 1fr;
@@ -82,20 +109,45 @@
     @media (max-width: 980px) {
       .funnel-grid { grid-template-columns: 1fr; }
     }
-    .chart-wrap { height: 260px; }
-    .chart-wrap.small { height: 220px; }
-    .divider {
-      height: 1px;
-      background: rgba(255,255,255,0.10);
-      margin: 10px 0 8px;
+
+    table {
+      width:100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      overflow: hidden;
+      border-radius: 14px;
     }
-    .note {
-      margin-top: 10px;
-      color: var(--muted);
+    thead th {
+      text-align: left;
+      padding: 10px 10px;
+      color: rgba(255,255,255,0.82);
+      background: rgba(255,255,255,0.06);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+    }
+    tbody td {
+      padding: 9px 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      color: rgba(255,255,255,0.88);
+      vertical-align: top;
+    }
+    tbody tr:hover td { background: rgba(255,255,255,0.04); }
+
+    .btn {
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.06);
+      color: rgba(255,255,255,0.88);
+      border-radius: 12px;
+      padding: 8px 10px;
       font-size: 12px;
     }
+    .btn:hover { background: rgba(255,255,255,0.10); }
+    .footer-note { margin-top:10px; color:var(--muted); font-size:12px; }
   </style>
 </head>
+
 <body>
 <header>
   <div class="title">
@@ -130,136 +182,422 @@
     </div>
   </div>
 
-  <div class="note">
-    Funnel stages shown: <strong>Demo booked → Demo attended → Quotations → Invoices → Sales</strong>.
-    Values are shown for <strong>Quotations / Invoices / Sales</strong>.
-  </div>
+  <!-- KPI snapshots -->
+  <div class="section-title">KPI snapshot — February 2026</div>
+  <div class="grid" id="kpiFeb"></div>
 
+  <div class="section-title">KPI snapshot — January 2026</div>
+  <div class="grid" id="kpiJan"></div>
+
+  <div class="section-title">Cumulative (Jan–Feb 2026)</div>
+  <div class="grid" id="kpiCum"></div>
+
+  <div class="section-title">2-month comparison</div>
+  <div class="grid">
+    <div class="card span-7">
+      <div class="row">
+        <div class="badge"><span class="dot"></span><span>Total revenue (New + Renewals) vs Marketing spend</span></div>
+        <span class="pill">USD</span>
+      </div>
+      <div class="chart-wrap"><canvas id="totalRevenue"></canvas></div>
+    </div>
+
+    <div class="card span-5">
+      <div class="row">
+        <div class="badge"><span class="dot"></span><span>Revenue split</span></div>
+        <span class="pill">stacked</span>
+      </div>
+      <div class="chart-wrap"><canvas id="revenueSplit"></canvas></div>
+    </div>
+
+    <div class="card span-6">
+      <div class="row">
+        <div class="badge"><span class="dot"></span><span>Bookings by channel</span></div>
+        <span class="pill">stacked</span>
+      </div>
+      <div class="chart-wrap"><canvas id="bookedChannels"></canvas></div>
+    </div>
+
+    <div class="card span-6">
+      <div class="row">
+        <div class="badge"><span class="dot"></span><span>Rates</span></div>
+        <span class="pill">%</span>
+      </div>
+      <div class="chart-wrap"><canvas id="rates"></canvas></div>
+    </div>
+
+    <div class="card span-12">
+      <div class="row">
+        <div class="badge"><span class="dot"></span><span>Metrics table</span></div>
+        <button class="btn" onclick="downloadCSV()">Download CSV</button>
+      </div>
+      <div style="max-height: 440px; overflow:auto; border-radius: 14px; border:1px solid rgba(255,255,255,0.10)">
+        <table id="metricsTable"></table>
+      </div>
+      <div class="footer-note">Currency is USD. Data is embedded in this HTML file.</div>
+    </div>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>
+/** ===== Data (embedded) ===== */
 const DATA = {
   months: ["Jan 2026","Feb 2026"],
   jan: {
-    funnel: { booked_for_month: 82, attended: 41 },
-    quotations: { count: 17, value: 4297.50 },
-    invoices: { count: 13, value: 3026.50 },
-    paid: { count: 11, revenue: 2445.50 }
+    booked_channels: { "Telemarketing":32, "Ibragim":10, "Marketing Agency":24 },
+    total_booked: 66, plan_booked: 160, pct_plan_booked: 0.4125,
+    lead_cost: { "Telemarketing":55.47, "Ibragim":31.50, "Marketing Agency":92.21 },
+    marketing_spend: 1932.71,
+    funnel: { booked_for_month:82, attended:41, conversion:0.50, cost_per_demo:130.72 },
+    quotations: { count:17, value:4297.50 },
+    invoices: { count:13, value:3026.50, invoice_to_paid:0.7647 },
+    paid: { count:11, revenue:2445.50 },
+    cac: 1.265,
+    renewals: { paid_count:8, revenue:577.25 }
   },
   feb: {
-    funnel: { booked_for_month: 115, attended: 54 },
-    quotations: { count: 23, value: 5032.50 },
-    invoices: { count: 11, value: 3535.25 },
-    paid: { count: 7, revenue: 2485.00 }
+    booked_channels: { "Telemarketing":23, "Ibragim":21, "Marketing Agency":73 },
+    total_booked: 117, plan_booked: 160, pct_plan_booked: 0.7313,
+    lead_cost: { "Telemarketing":77.17, "Ibragim":41.67, "Marketing Agency":47.68 },
+    marketing_spend: 1958.35,
+    funnel: { booked_for_month:115, attended:54, conversion:0.4696, cost_per_demo:128.16 },
+    quotations: { count:23, value:5032.50 },
+    invoices: { count:11, value:3535.25, invoice_to_paid:0.4783 },
+    paid: { count:7, revenue:2485.00 },
+    cac: 1.269,
+    renewals: { paid_count:3, revenue:434.00 },
+    churn: 5
   }
+};
+
+function totalRevenue(m) { return m.paid.revenue + m.renewals.revenue; }
+
+const cum = {
+  total_revenue: totalRevenue(DATA.jan) + totalRevenue(DATA.feb),
+  marketing_spend: DATA.jan.marketing_spend + DATA.feb.marketing_spend,
+  demo_booked: DATA.jan.funnel.booked_for_month + DATA.feb.funnel.booked_for_month,
+  sales_count: DATA.jan.paid.count + DATA.feb.paid.count
 };
 
 function fmtMoney(x) {
   if (x === null || x === undefined || Number.isNaN(x)) return '–';
-  return '$' + Number(x).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+  return '$' + Number(x).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
 }
 function fmtInt(x) {
   if (x === null || x === undefined || Number.isNaN(x)) return '–';
   return Math.round(Number(x)).toLocaleString();
 }
+function fmtPct(x) {
+  if (x === null || x === undefined || Number.isNaN(x)) return '–';
+  return (Number(x) * 100).toFixed(2) + '%';
+}
+
+/** ===== KPI Cards ===== */
+function renderCards(elId, cards) {
+  const el = document.getElementById(elId);
+  el.innerHTML = cards.map(([lab,val]) => `
+    <div class="card kpi-card span-3">
+      <div class="kpi-label">${lab}</div>
+      <div class="kpi-value">${val}</div>
+    </div>
+  `).join('');
+}
 
 const jan = DATA.jan;
 const feb = DATA.feb;
 
+renderCards('kpiFeb', [
+  ["Total revenue (Feb)", fmtMoney(totalRevenue(feb))],
+  ["New revenue (Feb)", fmtMoney(feb.paid.revenue)],
+  ["Renewals (Feb)", fmtMoney(feb.renewals.revenue)],
+  ["Demo booked (Feb)", fmtInt(feb.funnel.booked_for_month)],
+  ["Demo attended (Feb)", fmtInt(feb.funnel.attended)],
+  ["Invoice → Paid (Feb)", fmtPct(feb.invoices.invoice_to_paid)]
+]);
+
+renderCards('kpiJan', [
+  ["Total revenue (Jan)", fmtMoney(totalRevenue(jan))],
+  ["New revenue (Jan)", fmtMoney(jan.paid.revenue)],
+  ["Renewals (Jan)", fmtMoney(jan.renewals.revenue)],
+  ["Demo booked (Jan)", fmtInt(jan.funnel.booked_for_month)],
+  ["Demo attended (Jan)", fmtInt(jan.funnel.attended)],
+  ["Invoice → Paid (Jan)", fmtPct(jan.invoices.invoice_to_paid)]
+]);
+
+renderCards('kpiCum', [
+  ["Total revenue (Jan–Feb)", fmtMoney(cum.total_revenue)],
+  ["Marketing spend (Jan–Feb)", fmtMoney(cum.marketing_spend)],
+  ["Demo booked (Jan–Feb)", fmtInt(cum.demo_booked)],
+  ["Sales (Jan–Feb)", fmtInt(cum.sales_count)]
+]);
+
+/** ===== Full Funnel Charts ===== */
 const funnelLabels = ['Demo booked', 'Demo attended', 'Quotations', 'Invoices', 'Sales'];
 const janQty = [jan.funnel.booked_for_month, jan.funnel.attended, jan.quotations.count, jan.invoices.count, jan.paid.count];
 const febQty = [feb.funnel.booked_for_month, feb.funnel.attended, feb.quotations.count, feb.invoices.count, feb.paid.count];
 
-const valueLabels = ['Quotations', 'Invoices', 'Sales'];
+const valLabels = ['Quotations', 'Invoices', 'Sales'];
 const janVal = [jan.quotations.value, jan.invoices.value, jan.paid.revenue];
 const febVal = [feb.quotations.value, feb.invoices.value, feb.paid.revenue];
 
-// January — quantities (horizontal bars)
 new Chart(document.getElementById('funnelJanQty'), {
   type: 'bar',
-  data: {
-    labels: funnelLabels,
-    datasets: [{ label: 'Quantity', data: janQty }]
-  },
+  data: { labels: funnelLabels, datasets: [{ label: 'Quantity', data: janQty }] },
   options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    indexAxis: 'y',
-    plugins: {
-      legend: { display: false },
-      tooltip: { callbacks: { label: (ctx) => ' ' + ctx.label + ': ' + fmtInt(ctx.parsed.x) } }
-    },
-    scales: {
-      x: { ticks: { color: 'rgba(255,255,255,0.75)' }, grid: { color: 'rgba(255,255,255,0.08)' } },
-      y: { ticks: { color: 'rgba(255,255,255,0.85)' }, grid: { color: 'rgba(255,255,255,0.08)' } }
+    responsive:true, maintainAspectRatio:false, indexAxis:'y',
+    plugins:{ legend:{display:false}, tooltip:{callbacks:{label:(c)=>` ${c.label}: ${fmtInt(c.parsed.x)}`}} },
+    scales:{
+      x:{ ticks:{color:'rgba(255,255,255,0.75)'}, grid:{color:'rgba(255,255,255,0.08)'} },
+      y:{ ticks:{color:'rgba(255,255,255,0.85)'}, grid:{color:'rgba(255,255,255,0.08)'} }
     }
   }
 });
 
-// January — values (vertical bars)
 new Chart(document.getElementById('funnelJanVal'), {
   type: 'bar',
-  data: {
-    labels: valueLabels,
-    datasets: [{ label: 'Value (USD)', data: janVal }]
-  },
+  data: { labels: valLabels, datasets: [{ label: 'Value (USD)', data: janVal }] },
   options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-      tooltip: { callbacks: { label: (ctx) => ' ' + ctx.label + ': ' + fmtMoney(ctx.parsed.y) } }
-    },
-    scales: {
-      x: { ticks: { color: 'rgba(255,255,255,0.75)' }, grid: { color: 'rgba(255,255,255,0.08)' } },
-      y: { ticks: { color: 'rgba(255,255,255,0.75)' }, grid: { color: 'rgba(255,255,255,0.08)' } }
+    responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{display:false}, tooltip:{callbacks:{label:(c)=>` ${c.label}: ${fmtMoney(c.parsed.y)}`}} },
+    scales:{
+      x:{ ticks:{color:'rgba(255,255,255,0.75)'}, grid:{color:'rgba(255,255,255,0.08)'} },
+      y:{ ticks:{color:'rgba(255,255,255,0.75)'}, grid:{color:'rgba(255,255,255,0.08)'} }
     }
   }
 });
 
-// February — quantities (horizontal bars)
 new Chart(document.getElementById('funnelFebQty'), {
   type: 'bar',
-  data: {
-    labels: funnelLabels,
-    datasets: [{ label: 'Quantity', data: febQty }]
-  },
+  data: { labels: funnelLabels, datasets: [{ label: 'Quantity', data: febQty }] },
   options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    indexAxis: 'y',
-    plugins: {
-      legend: { display: false },
-      tooltip: { callbacks: { label: (ctx) => ' ' + ctx.label + ': ' + fmtInt(ctx.parsed.x) } }
-    },
-    scales: {
-      x: { ticks: { color: 'rgba(255,255,255,0.75)' }, grid: { color: 'rgba(255,255,255,0.08)' } },
-      y: { ticks: { color: 'rgba(255,255,255,0.85)' }, grid: { color: 'rgba(255,255,255,0.08)' } }
+    responsive:true, maintainAspectRatio:false, indexAxis:'y',
+    plugins:{ legend:{display:false}, tooltip:{callbacks:{label:(c)=>` ${c.label}: ${fmtInt(c.parsed.x)}`}} },
+    scales:{
+      x:{ ticks:{color:'rgba(255,255,255,0.75)'}, grid:{color:'rgba(255,255,255,0.08)'} },
+      y:{ ticks:{color:'rgba(255,255,255,0.85)'}, grid:{color:'rgba(255,255,255,0.08)'} }
     }
   }
 });
 
-// February — values (vertical bars)
 new Chart(document.getElementById('funnelFebVal'), {
   type: 'bar',
-  data: {
-    labels: valueLabels,
-    datasets: [{ label: 'Value (USD)', data: febVal }]
-  },
+  data: { labels: valLabels, datasets: [{ label: 'Value (USD)', data: febVal }] },
   options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-      tooltip: { callbacks: { label: (ctx) => ' ' + ctx.label + ': ' + fmtMoney(ctx.parsed.y) } }
-    },
-    scales: {
-      x: { ticks: { color: 'rgba(255,255,255,0.75)' }, grid: { color: 'rgba(255,255,255,0.08)' } },
-      y: { ticks: { color: 'rgba(255,255,255,0.75)' }, grid: { color: 'rgba(255,255,255,0.08)' } }
+    responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{display:false}, tooltip:{callbacks:{label:(c)=>` ${c.label}: ${fmtMoney(c.parsed.y)}`}} },
+    scales:{
+      x:{ ticks:{color:'rgba(255,255,255,0.75)'}, grid:{color:'rgba(255,255,255,0.08)'} },
+      y:{ ticks:{color:'rgba(255,255,255,0.75)'}, grid:{color:'rgba(255,255,255,0.08)'} }
     }
   }
 });
+
+/** ===== Comparison Charts ===== */
+const months = DATA.months;
+const totalRev = [totalRevenue(jan), totalRevenue(feb)];
+
+new Chart(document.getElementById('totalRevenue'), {
+  type: 'line',
+  data: {
+    labels: months,
+    datasets: [
+      { label: 'Total revenue', data: totalRev, tension: 0.3 },
+      { label: 'Marketing spend', data: [jan.marketing_spend, feb.marketing_spend], tension: 0.3 }
+    ]
+  },
+  options: {
+    responsive:true, maintainAspectRatio:false,
+    plugins:{
+      legend:{ labels:{color:'rgba(255,255,255,0.85)'} },
+      tooltip:{ callbacks:{ label:(c)=>`${c.dataset.label}: ${fmtMoney(c.parsed.y)}` } }
+    },
+    scales:{
+      x:{ ticks:{color:'rgba(255,255,255,0.75)'}, grid:{color:'rgba(255,255,255,0.08)'} },
+      y:{ ticks:{color:'rgba(255,255,255,0.75)'}, grid:{color:'rgba(255,255,255,0.08)'} }
+    }
+  }
+});
+
+new Chart(document.getElementById('revenueSplit'), {
+  type: 'bar',
+  data: {
+    labels: months,
+    datasets: [
+      { label: 'New revenue', data: [jan.paid.revenue, feb.paid.revenue], stack: 's' },
+      { label: 'Renewals', data: [jan.renewals.revenue, feb.renewals.revenue], stack: 's' }
+    ]
+  },
+  options: {
+    responsive:true, maintainAspectRatio:false,
+    plugins:{
+      legend:{ labels:{color:'rgba(255,255,255,0.85)'} },
+      tooltip:{ callbacks:{ label:(c)=>`${c.dataset.label}: ${fmtMoney(c.parsed.y)}` } }
+    },
+    scales:{
+      x:{ stacked:true, ticks:{color:'rgba(255,255,255,0.75)'}, grid:{color:'rgba(255,255,255,0.08)'} },
+      y:{ stacked:true, ticks:{color:'rgba(255,255,255,0.75)'}, grid:{color:'rgba(255,255,255,0.08)'} }
+    }
+  }
+});
+
+new Chart(document.getElementById('bookedChannels'), {
+  type: 'bar',
+  data: {
+    labels: months,
+    datasets: [
+      { label: 'Telemarketing', data: [jan.booked_channels["Telemarketing"], feb.booked_channels["Telemarketing"]], stack:'s' },
+      { label: 'Ibragim', data: [jan.booked_channels["Ibragim"], feb.booked_channels["Ibragim"]], stack:'s' },
+      { label: 'Marketing Agency', data: [jan.booked_channels["Marketing Agency"], feb.booked_channels["Marketing Agency"]], stack:'s' }
+    ]
+  },
+  options: {
+    responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{ labels:{color:'rgba(255,255,255,0.85)'} } },
+    scales:{
+      x:{ stacked:true, ticks:{color:'rgba(255,255,255,0.75)'}, grid:{color:'rgba(255,255,255,0.08)'} },
+      y:{ stacked:true, ticks:{color:'rgba(255,255,255,0.75)'}, grid:{color:'rgba(255,255,255,0.08)'} }
+    }
+  }
+});
+
+new Chart(document.getElementById('rates'), {
+  type: 'line',
+  data: {
+    labels: months,
+    datasets: [
+      { label: 'Demo conversion', data: [jan.funnel.conversion, feb.funnel.conversion], tension: 0.25 },
+      { label: 'Invoice → Paid', data: [jan.invoices.invoice_to_paid, feb.invoices.invoice_to_paid], tension: 0.25 }
+    ]
+  },
+  options: {
+    responsive:true, maintainAspectRatio:false,
+    plugins:{
+      legend:{ labels:{color:'rgba(255,255,255,0.85)'} },
+      tooltip:{ callbacks:{ label:(c)=>`${c.dataset.label}: ${fmtPct(c.parsed.y)}` } }
+    },
+    scales:{
+      x:{ ticks:{color:'rgba(255,255,255,0.75)'}, grid:{color:'rgba(255,255,255,0.08)'} },
+      y:{
+        min:0, max:1,
+        ticks:{ color:'rgba(255,255,255,0.75)', callback:(v)=>`${(v*100).toFixed(0)}%` },
+        grid:{ color:'rgba(255,255,255,0.08)' }
+      }
+    }
+  }
+});
+
+/** ===== Metrics table + CSV export ===== */
+const tableCols = [
+  "Month","Demo booked","Demo attended",
+  "Quotations qty","Quotations value (USD)",
+  "Invoices qty","Invoices value (USD)",
+  "Sales qty","Sales value (USD)",
+  "Renewals qty","Renewals value (USD)",
+  "Total revenue (USD)","Marketing spend (USD)",
+  "CAC","Invoice→Paid","Conversion","Churn"
+];
+
+const tableData = [
+  {
+    "Month":"Jan 2026",
+    "Demo booked": jan.funnel.booked_for_month,
+    "Demo attended": jan.funnel.attended,
+    "Quotations qty": jan.quotations.count,
+    "Quotations value (USD)": jan.quotations.value,
+    "Invoices qty": jan.invoices.count,
+    "Invoices value (USD)": jan.invoices.value,
+    "Sales qty": jan.paid.count,
+    "Sales value (USD)": jan.paid.revenue,
+    "Renewals qty": jan.renewals.paid_count,
+    "Renewals value (USD)": jan.renewals.revenue,
+    "Total revenue (USD)": totalRevenue(jan),
+    "Marketing spend (USD)": jan.marketing_spend,
+    "CAC": jan.cac,
+    "Invoice→Paid": jan.invoices.invoice_to_paid,
+    "Conversion": jan.funnel.conversion,
+    "Churn": null
+  },
+  {
+    "Month":"Feb 2026",
+    "Demo booked": feb.funnel.booked_for_month,
+    "Demo attended": feb.funnel.attended,
+    "Quotations qty": feb.quotations.count,
+    "Quotations value (USD)": feb.quotations.value,
+    "Invoices qty": feb.invoices.count,
+    "Invoices value (USD)": feb.invoices.value,
+    "Sales qty": feb.paid.count,
+    "Sales value (USD)": feb.paid.revenue,
+    "Renewals qty": feb.renewals.paid_count,
+    "Renewals value (USD)": feb.renewals.revenue,
+    "Total revenue (USD)": totalRevenue(feb),
+    "Marketing spend (USD)": feb.marketing_spend,
+    "CAC": feb.cac,
+    "Invoice→Paid": feb.invoices.invoice_to_paid,
+    "Conversion": feb.funnel.conversion,
+    "Churn": feb.churn ?? null
+  }
+];
+
+function renderTable() {
+  const tbl = document.getElementById('metricsTable');
+  const thead = document.createElement('thead');
+  const thr = document.createElement('tr');
+  tableCols.forEach(c => {
+    const th = document.createElement('th');
+    th.textContent = c;
+    thr.appendChild(th);
+  });
+  thead.appendChild(thr);
+
+  const tbody = document.createElement('tbody');
+  tableData.forEach(row => {
+    const tr = document.createElement('tr');
+    tableCols.forEach(c => {
+      const td = document.createElement('td');
+      const v = row[c];
+      const lc = c.toLowerCase();
+      if (lc.includes('usd') || lc.includes('revenue') || lc.includes('spend') || lc.includes('value') || lc.includes('cost')) {
+        td.textContent = (v === null || v === undefined) ? '–' : fmtMoney(v);
+      } else if (lc.includes('invoice→paid') || lc.includes('conversion') || lc.includes('%')) {
+        td.textContent = (v === null || v === undefined) ? '–' : fmtPct(v);
+      } else if (c === 'CAC') {
+        td.textContent = (v === null || v === undefined) ? '–' : Number(v).toFixed(3);
+      } else if (c === 'Month') {
+        td.textContent = v ?? '–';
+      } else {
+        td.textContent = (v === null || v === undefined) ? '–' : fmtInt(v);
+      }
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+
+  tbl.innerHTML = '';
+  tbl.appendChild(thead);
+  tbl.appendChild(tbody);
+}
+renderTable();
+
+function downloadCSV() {
+  const rows = [tableCols.join(',')].concat(
+    tableData.map(r => tableCols.map(c => {
+      let v = r[c];
+      if (v === null || v === undefined) v = '';
+      const s = String(v).replaceAll('"','""');
+      return (s.includes(',') || s.includes('"') || s.includes('\n')) ? '"' + s + '"' : s;
+    }).join(','))
+  );
+  const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'mypulse_sales_dashboard_jan_feb_2026_usd.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
 </script>
 </body>
 </html>
