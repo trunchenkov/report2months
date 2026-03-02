@@ -1,105 +1,11 @@
-import json, pandas as pd, math, os, re
-
-# Reuse the previously prepared structured data by reconstructing quickly (same as earlier)
-jan = {
- "booked_channels":{"Telemarketing":32,"Ibragim":10,"Marketing Agency":24},
- "total_booked":66,"plan_booked":160,"pct_plan_booked":0.4125,
- "lead_cost":{"Telemarketing":55.47,"Ibragim":31.50,"Marketing Agency":92.21},
- "marketing_spend":1932.71,
- "funnel":{"booked_for_month":82,"attended":41,"conversion":0.50,"cost_per_demo":130.72,"plan_cost_per_demo":55,"plan_conversion":0.60},
- "quotations":{"count":17,"value":4297.50,"breakdown":"11 tele + 6 marketing"},
- "invoices":{"count":13,"value":3026.50,"invoice_to_paid":0.7647},
- "paid":{"count":11,"revenue":2445.50,"revenue_vs_plan":0.3839},
- "cac":1.265,
- "renewals":{"paid_count":8,"revenue":577.25},
-}
-feb = {
- "booked_channels":{"Telemarketing":23,"Ibragim":21,"Marketing Agency":73},
- "total_booked":117,"plan_booked":160,"pct_plan_booked":0.7313,
- "lead_cost":{"Telemarketing":77.17,"Ibragim":41.67,"Marketing Agency":47.68},
- "marketing_spend":1958.35,
- "funnel":{"booked_for_month":115,"attended":54,"conversion":0.4696,"cost_per_demo":128.16,"plan_cost_per_demo":55,"plan_conversion":0.60},
- "quotations":{"count":23,"value":5032.50,"breakdown":"16 tele + 7 marketing"},
- "invoices":{"count":11,"value":3535.25,"invoice_to_paid":0.4783},
- "paid":{"count":7,"revenue":2485.00},
- "cac":1.269,
- "renewals":{"paid_count":3,"revenue":434.00},
- "churn":5
-}
-def total_rev(d): return d["paid"]["revenue"] + d["renewals"]["revenue"]
-jan_total=total_rev(jan)
-feb_total=total_rev(feb)
-cum = {
- "paid_revenue": jan["paid"]["revenue"]+feb["paid"]["revenue"],
- "renewals_revenue": jan["renewals"]["revenue"]+feb["renewals"]["revenue"],
- "total_revenue": jan_total+feb_total,
- "marketing_spend": jan["marketing_spend"]+feb["marketing_spend"],
- "booked": jan["total_booked"]+feb["total_booked"],
- "paid_count": jan["paid"]["count"]+feb["paid"]["count"],
- "renewals_count": jan["renewals"]["paid_count"]+feb["renewals"]["paid_count"],
-}
-data = {"months":["Jan 2026","Feb 2026"],"jan":jan,"feb":feb,"cum":cum}
-
-def fmt_money(x): return f"{x:,.2f}"
-def fmt_int(x): return f"{int(x):,}"
-def fmt_pct(x): return f"{x*100:.2f}%"
-
-cards = [
- ("Total revenue (Feb)", f"${fmt_money(feb_total)}"),
- ("New revenue (Feb)", f"${fmt_money(feb['paid']['revenue'])}"),
- ("Renewals (Feb)", f"${fmt_money(feb['renewals']['revenue'])}"),
- ("Demo booked (Feb)", fmt_int(feb["funnel"]["booked_for_month"])),
- ("Demo attended (Feb)", fmt_int(feb["funnel"]["attended"])),
- ("Invoice → Paid (Feb)", fmt_pct(feb["invoices"]["invoice_to_paid"])),
-]
-cards2 = [
- ("Total revenue (Jan)", f"${fmt_money(jan_total)}"),
- ("New revenue (Jan)", f"${fmt_money(jan['paid']['revenue'])}"),
- ("Renewals (Jan)", f"${fmt_money(jan['renewals']['revenue'])}"),
- ("Demo booked (Jan)", fmt_int(jan["funnel"]["booked_for_month"])),
- ("Demo attended (Jan)", fmt_int(jan["funnel"]["attended"])),
- ("Invoice → Paid (Jan)", fmt_pct(jan["invoices"]["invoice_to_paid"])),
-]
-cum_cards = [
- ("Total revenue (Jan–Feb)", f"${fmt_money(cum['total_revenue'])}"),
- ("Marketing spend (Jan–Feb)", f"${fmt_money(cum['marketing_spend'])}"),
- ("Demo booked (Jan–Feb)", fmt_int(jan["funnel"]["booked_for_month"]+feb["funnel"]["booked_for_month"])),
- ("Sales (Jan–Feb)", fmt_int(cum['paid_count'])),
-]
-
-def row(month, d, total):
-    return {
-        "Month": month,
-        "Demo booked": d["funnel"]["booked_for_month"],
-        "Demo attended": d["funnel"]["attended"],
-        "Quotations qty": d["quotations"]["count"],
-        "Quotations value (USD)": d["quotations"]["value"],
-        "Invoices qty": d["invoices"]["count"],
-        "Invoices value (USD)": d["invoices"]["value"],
-        "Sales qty": d["paid"]["count"],
-        "Sales value (USD)": d["paid"]["revenue"],
-        "Renewals qty": d["renewals"]["paid_count"],
-        "Renewals value (USD)": d["renewals"]["revenue"],
-        "Total revenue (USD)": total,
-        "Marketing spend (USD)": d["marketing_spend"],
-        "CAC": d["cac"],
-        "Invoice→Paid": d["invoices"]["invoice_to_paid"],
-        "Conversion": d["funnel"]["conversion"],
-        "Churn": d.get("churn", None),
-    }
-table_df = pd.DataFrame([
-    row("Jan 2026", jan, jan_total),
-    row("Feb 2026", feb, feb_total)
-])
-
-html = f"""<!doctype html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>MyPulse — Sales Dashboard (Jan–Feb 2026)</title>
   <style>
-    :root {{
+    :root {
       --bg: #0b1220;
       --text: rgba(255,255,255,0.92);
       --muted: rgba(255,255,255,0.65);
@@ -107,57 +13,57 @@ html = f"""<!doctype html>
       --accent: #C353EA;
       --shadow: 0 12px 30px rgba(0,0,0,0.35);
       --radius: 18px;
-    }}
-    * {{ box-sizing: border-box; }}
-    body {{
+    }
+    * { box-sizing: border-box; }
+    body {
       margin: 0;
       font-family: ui-sans-serif, -apple-system, system-ui, Segoe UI, Roboto, Helvetica, Arial;
       background: radial-gradient(1200px 700px at 20% 0%, rgba(195,83,234,0.18), transparent 55%),
                   radial-gradient(900px 600px at 90% 10%, rgba(56,189,248,0.12), transparent 50%),
                   var(--bg);
       color: var(--text);
-    }}
-    header {{
+    }
+    header {
       padding: 28px 22px 10px;
       max-width: 1180px;
       margin: 0 auto;
-    }}
-    .title {{ display:flex; gap:12px; align-items:baseline; flex-wrap:wrap; }}
-    h1 {{ margin:0; font-size:22px; letter-spacing:0.2px; }}
-    .subtitle {{ color: var(--muted); font-size: 13px; }}
-    .container {{
+    }
+    .title { display:flex; gap:12px; align-items:baseline; flex-wrap:wrap; }
+    h1 { margin:0; font-size:22px; letter-spacing:0.2px; }
+    .subtitle { color: var(--muted); font-size: 13px; }
+    .container {
       max-width: 1180px;
       margin: 0 auto;
       padding: 12px 22px 44px;
-    }}
-    .grid {{
+    }
+    .grid {
       display: grid;
       grid-template-columns: repeat(12, 1fr);
       gap: 14px;
-    }}
-    .card {{
+    }
+    .card {
       background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.04));
       border: 1px solid var(--border);
       border-radius: var(--radius);
       box-shadow: var(--shadow);
       padding: 14px 14px;
       overflow: hidden;
-    }}
-    .kpi-card {{ padding: 14px 16px; }}
-    .kpi-label {{ color: var(--muted); font-size: 12px; margin-bottom: 6px; }}
-    .kpi-value {{ font-size: 22px; font-weight: 700; letter-spacing: 0.2px; }}
-    .section-title {{
+    }
+    .kpi-card { padding: 14px 16px; }
+    .kpi-label { color: var(--muted); font-size: 12px; margin-bottom: 6px; }
+    .kpi-value { font-size: 22px; font-weight: 700; letter-spacing: 0.2px; }
+    .section-title {
       margin: 18px 4px 10px;
       font-size: 13px;
       color: var(--muted);
       letter-spacing: 0.2px;
       text-transform: uppercase;
-    }}
-    .row {{
+    }
+    .row {
       display:flex; justify-content:space-between; align-items:center; gap:10px;
       margin-bottom: 10px;
-    }}
-    .pill {{
+    }
+    .pill {
       border: 1px solid var(--border);
       background: rgba(255,255,255,0.06);
       border-radius: 999px;
@@ -165,37 +71,37 @@ html = f"""<!doctype html>
       color: var(--muted);
       font-size: 12px;
       white-space: nowrap;
-    }}
-    .badge {{
+    }
+    .badge {
       display:inline-flex; align-items:center; gap:8px;
       color: rgba(255,255,255,0.85);
       font-size: 12px;
-    }}
-    .dot {{
+    }
+    .dot {
       width:10px; height:10px; border-radius:50%;
       background: var(--accent);
       box-shadow: 0 0 0 4px rgba(195,83,234,0.18);
-    }}
-    .chart-wrap {{ height: 260px; }}
-    .chart-wrap.small {{ height: 220px; }}
-    .span-3 {{ grid-column: span 3; }}
-    .span-4 {{ grid-column: span 4; }}
-    .span-5 {{ grid-column: span 5; }}
-    .span-6 {{ grid-column: span 6; }}
-    .span-7 {{ grid-column: span 7; }}
-    .span-8 {{ grid-column: span 8; }}
-    .span-12 {{ grid-column: span 12; }}
-    @media (max-width: 980px) {{
-      .span-3,.span-4,.span-5,.span-6,.span-7,.span-8 {{ grid-column: span 12; }}
-    }}
-    table {{
+    }
+    .chart-wrap { height: 260px; }
+    .chart-wrap.small { height: 220px; }
+    .span-3 { grid-column: span 3; }
+    .span-4 { grid-column: span 4; }
+    .span-5 { grid-column: span 5; }
+    .span-6 { grid-column: span 6; }
+    .span-7 { grid-column: span 7; }
+    .span-8 { grid-column: span 8; }
+    .span-12 { grid-column: span 12; }
+    @media (max-width: 980px) {
+      .span-3,.span-4,.span-5,.span-6,.span-7,.span-8 { grid-column: span 12; }
+    }
+    table {
       width:100%;
       border-collapse: collapse;
       font-size: 12px;
       overflow: hidden;
       border-radius: 14px;
-    }}
-    thead th {{
+    }
+    thead th {
       text-align: left;
       padding: 10px 10px;
       color: rgba(255,255,255,0.82);
@@ -203,15 +109,15 @@ html = f"""<!doctype html>
       border-bottom: 1px solid var(--border);
       position: sticky;
       top: 0;
-    }}
-    tbody td {{
+    }
+    tbody td {
       padding: 9px 10px;
       border-bottom: 1px solid rgba(255,255,255,0.08);
       color: rgba(255,255,255,0.88);
       vertical-align: top;
-    }}
-    tbody tr:hover td {{ background: rgba(255,255,255,0.04); }}
-    .btn {{
+    }
+    tbody tr:hover td { background: rgba(255,255,255,0.04); }
+    .btn {
       cursor: pointer;
       border: 1px solid var(--border);
       background: rgba(255,255,255,0.06);
@@ -219,22 +125,22 @@ html = f"""<!doctype html>
       border-radius: 12px;
       padding: 8px 10px;
       font-size: 12px;
-    }}
-    .btn:hover {{ background: rgba(255,255,255,0.10); }}
-    .footer-note {{ margin-top:10px; color:var(--muted); font-size:12px; }}
-    .funnel-grid {{
+    }
+    .btn:hover { background: rgba(255,255,255,0.10); }
+    .footer-note { margin-top:10px; color:var(--muted); font-size:12px; }
+    .funnel-grid {
       display:grid;
       grid-template-columns: 1fr 1fr;
       gap: 14px;
-    }}
-    @media (max-width: 980px) {{
-      .funnel-grid {{ grid-template-columns: 1fr; }}
-    }}
-    .divider {{
+    }
+    @media (max-width: 980px) {
+      .funnel-grid { grid-template-columns: 1fr; }
+    }
+    .divider {
       height: 1px;
       background: rgba(255,255,255,0.10);
       margin: 10px 0 8px;
-    }}
+    }
   </style>
 </head>
 <body>
@@ -273,19 +179,13 @@ html = f"""<!doctype html>
 
   <!-- KPI snapshots -->
   <div class="section-title">KPI snapshot — February 2026</div>
-  <div class="grid">
-    {''.join([f'<div class="card kpi-card span-3"><div class="kpi-label">{lab}</div><div class="kpi-value">{val}</div></div>' for lab,val in cards])}
-  </div>
+  <div class="grid" id="febCards"></div>
 
   <div class="section-title">KPI snapshot — January 2026</div>
-  <div class="grid">
-    {''.join([f'<div class="card kpi-card span-3"><div class="kpi-label">{lab}</div><div class="kpi-value">{val}</div></div>' for lab,val in cards2])}
-  </div>
+  <div class="grid" id="janCards"></div>
 
   <div class="section-title">Cumulative (Jan–Feb 2026)</div>
-  <div class="grid">
-    {''.join([f'<div class="card kpi-card span-3"><div class="kpi-label">{lab}</div><div class="kpi-value">{val}</div></div>' for lab,val in cum_cards])}
-  </div>
+  <div class="grid" id="cumCards"></div>
 
   <div class="section-title">2-month comparison</div>
   <div class="grid">
@@ -335,325 +235,7 @@ html = f"""<!doctype html>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script>
-const DATA = {json.dumps(data, ensure_ascii=False)};
-
-function fmtMoney(x) {{
-  if (x === null || x === undefined || Number.isNaN(x)) return '–';
-  return '$' + Number(x).toLocaleString(undefined, {{minimumFractionDigits: 2, maximumFractionDigits: 2}});
-}}
-function fmtInt(x) {{
-  if (x === null || x === undefined || Number.isNaN(x)) return '–';
-  return Math.round(Number(x)).toLocaleString();
-}}
-function fmtPct(x) {{
-  if (x === null || x === undefined || Number.isNaN(x)) return '–';
-  return (Number(x) * 100).toFixed(2) + '%';
-}}
-
-const months = DATA.months;
-const jan = DATA.jan;
-const feb = DATA.feb;
-
-// ===== Full funnels =====
-const funnelLabels = ['Demo booked', 'Demo attended', 'Quotations', 'Invoices', 'Sales'];
-const janQty = [jan.funnel.booked_for_month, jan.funnel.attended, jan.quotations.count, jan.invoices.count, jan.paid.count];
-const febQty = [feb.funnel.booked_for_month, feb.funnel.attended, feb.quotations.count, feb.invoices.count, feb.paid.count];
-
-const janValLabels = ['Quotations', 'Invoices', 'Sales'];
-const janVal = [jan.quotations.value, jan.invoices.value, jan.paid.revenue];
-const febVal = [feb.quotations.value, feb.invoices.value, feb.paid.revenue];
-
-// Jan funnel qty
-new Chart(document.getElementById('funnelJanQty'), {{
-  type: 'bar',
-  data: {{
-    labels: funnelLabels,
-    datasets: [{{ label: 'Quantity', data: janQty }}]
-  }},
-  options: {{
-    responsive: true,
-    maintainAspectRatio: false,
-    indexAxis: 'y',
-    plugins: {{
-      legend: {{ display: false }},
-      tooltip: {{
-        callbacks: {{
-          label: (ctx) => ' ' + ctx.label + ': ' + fmtInt(ctx.parsed.x)
-        }}
-      }}
-    }},
-    scales: {{
-      x: {{ ticks: {{ color: 'rgba(255,255,255,0.75)' }}, grid: {{ color: 'rgba(255,255,255,0.08)' }} }},
-      y: {{ ticks: {{ color: 'rgba(255,255,255,0.85)' }}, grid: {{ color: 'rgba(255,255,255,0.08)' }} }}
-    }}
-  }}
-}});
-
-// Jan funnel value
-new Chart(document.getElementById('funnelJanVal'), {{
-  type: 'bar',
-  data: {{
-    labels: janValLabels,
-    datasets: [{{ label: 'Value (USD)', data: janVal }}]
-  }},
-  options: {{
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {{
-      legend: {{ display: false }},
-      tooltip: {{
-        callbacks: {{
-          label: (ctx) => ' ' + ctx.label + ': ' + fmtMoney(ctx.parsed.y)
-        }}
-      }}
-    }},
-    scales: {{
-      x: {{ ticks: {{ color: 'rgba(255,255,255,0.75)' }}, grid: {{ color: 'rgba(255,255,255,0.08)' }} }},
-      y: {{ ticks: {{ color: 'rgba(255,255,255,0.75)' }}, grid: {{ color: 'rgba(255,255,255,0.08)' }} }}
-    }}
-  }}
-}});
-
-// Feb funnel qty
-new Chart(document.getElementById('funnelFebQty'), {{
-  type: 'bar',
-  data: {{
-    labels: funnelLabels,
-    datasets: [{{ label: 'Quantity', data: febQty }}]
-  }},
-  options: {{
-    responsive: true,
-    maintainAspectRatio: false,
-    indexAxis: 'y',
-    plugins: {{
-      legend: {{ display: false }},
-      tooltip: {{
-        callbacks: {{
-          label: (ctx) => ' ' + ctx.label + ': ' + fmtInt(ctx.parsed.x)
-        }}
-      }}
-    }},
-    scales: {{
-      x: {{ ticks: {{ color: 'rgba(255,255,255,0.75)' }}, grid: {{ color: 'rgba(255,255,255,0.08)' }} }},
-      y: {{ ticks: {{ color: 'rgba(255,255,255,0.85)' }}, grid: {{ color: 'rgba(255,255,255,0.08)' }} }}
-    }}
-  }}
-}});
-
-// Feb funnel value
-new Chart(document.getElementById('funnelFebVal'), {{
-  type: 'bar',
-  data: {{
-    labels: janValLabels,
-    datasets: [{{ label: 'Value (USD)', data: febVal }}]
-  }},
-  options: {{
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {{
-      legend: {{ display: false }},
-      tooltip: {{
-        callbacks: {{
-          label: (ctx) => ' ' + ctx.label + ': ' + fmtMoney(ctx.parsed.y)
-        }}
-      }}
-    }},
-    scales: {{
-      x: {{ ticks: {{ color: 'rgba(255,255,255,0.75)' }}, grid: {{ color: 'rgba(255,255,255,0.08)' }} }},
-      y: {{ ticks: {{ color: 'rgba(255,255,255,0.75)' }}, grid: {{ color: 'rgba(255,255,255,0.08)' }} }}
-    }}
-  }}
-}});
-
-// ===== Comparison charts =====
-const totalRev = [
-  jan.paid.revenue + jan.renewals.revenue,
-  feb.paid.revenue + feb.renewals.revenue
-];
-
-new Chart(document.getElementById('totalRevenue'), {{
-  type: 'line',
-  data: {{
-    labels: months,
-    datasets: [
-      {{ label: 'Total revenue', data: totalRev, tension: 0.3 }},
-      {{ label: 'Marketing spend', data: [jan.marketing_spend, feb.marketing_spend], tension: 0.3 }},
-    ]
-  }},
-  options: {{
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {{
-      legend: {{ labels: {{ color: 'rgba(255,255,255,0.85)' }} }},
-      tooltip: {{
-        callbacks: {{
-          label: (ctx) => ctx.dataset.label + ': ' + fmtMoney(ctx.parsed.y)
-        }}
-      }}
-    }},
-    scales: {{
-      x: {{ ticks: {{ color: 'rgba(255,255,255,0.75)' }}, grid: {{ color: 'rgba(255,255,255,0.08)' }} }},
-      y: {{ ticks: {{ color: 'rgba(255,255,255,0.75)' }}, grid: {{ color: 'rgba(255,255,255,0.08)' }} }}
-    }}
-  }}
-}});
-
-new Chart(document.getElementById('revenueSplit'), {{
-  type: 'bar',
-  data: {{
-    labels: months,
-    datasets: [
-      {{ label: 'New revenue', data: [jan.paid.revenue, feb.paid.revenue], stack: 's' }},
-      {{ label: 'Renewals', data: [jan.renewals.revenue, feb.renewals.revenue], stack: 's' }},
-    ]
-  }},
-  options: {{
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {{
-      legend: {{ labels: {{ color: 'rgba(255,255,255,0.85)' }} }},
-      tooltip: {{
-        callbacks: {{
-          label: (ctx) => ctx.dataset.label + ': ' + fmtMoney(ctx.parsed.y)
-        }}
-      }}
-    }},
-    scales: {{
-      x: {{ stacked: true, ticks: {{ color: 'rgba(255,255,255,0.75)' }}, grid: {{ color: 'rgba(255,255,255,0.08)' }} }},
-      y: {{ stacked: true, ticks: {{ color: 'rgba(255,255,255,0.75)' }}, grid: {{ color: 'rgba(255,255,255,0.08)' }} }}
-    }}
-  }}
-}});
-
-new Chart(document.getElementById('bookedChannels'), {{
-  type: 'bar',
-  data: {{
-    labels: months,
-    datasets: [
-      {{ label: 'Telemarketing', data: [jan.booked_channels["Telemarketing"], feb.booked_channels["Telemarketing"]], stack: 's' }},
-      {{ label: 'Ibragim', data: [jan.booked_channels["Ibragim"], feb.booked_channels["Ibragim"]], stack: 's' }},
-      {{ label: 'Marketing Agency', data: [jan.booked_channels["Marketing Agency"], feb.booked_channels["Marketing Agency"]], stack: 's' }},
-    ]
-  }},
-  options: {{
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {{
-      legend: {{ labels: {{ color: 'rgba(255,255,255,0.85)' }} }}
-    }},
-    scales: {{
-      x: {{ stacked: true, ticks: {{ color: 'rgba(255,255,255,0.75)' }}, grid: {{ color: 'rgba(255,255,255,0.08)' }} }},
-      y: {{ stacked: true, ticks: {{ color: 'rgba(255,255,255,0.75)' }}, grid: {{ color: 'rgba(255,255,255,0.08)' }} }}
-    }}
-  }}
-}});
-
-new Chart(document.getElementById('rates'), {{
-  type: 'line',
-  data: {{
-    labels: months,
-    datasets: [
-      {{ label: 'Demo conversion', data: [jan.funnel.conversion, feb.funnel.conversion], tension: 0.25 }},
-      {{ label: 'Invoice → Paid', data: [jan.invoices.invoice_to_paid, feb.invoices.invoice_to_paid], tension: 0.25 }},
-    ]
-  }},
-  options: {{
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {{
-      legend: {{ labels: {{ color: 'rgba(255,255,255,0.85)' }} }},
-      tooltip: {{
-        callbacks: {{
-          label: (ctx) => ctx.dataset.label + ': ' + fmtPct(ctx.parsed.y)
-        }}
-      }}
-    }},
-    scales: {{
-      x: {{ ticks: {{ color: 'rgba(255,255,255,0.75)' }}, grid: {{ color: 'rgba(255,255,255,0.08)' }} }},
-      y: {{
-        min: 0,
-        max: 1,
-        ticks: {{
-          color: 'rgba(255,255,255,0.75)',
-          callback: (v) => (v*100).toFixed(0) + '%'
-        }},
-        grid: {{ color: 'rgba(255,255,255,0.08)' }}
-      }}
-    }}
-  }}
-}});
-
-// ===== Table =====
-const tableCols = {json.dumps(table_df.columns.tolist(), ensure_ascii=False)};
-const tableData = {table_df.to_json(orient="records")};
-
-function renderTable() {{
-  const tbl = document.getElementById('metricsTable');
-  const thead = document.createElement('thead');
-  const thr = document.createElement('tr');
-  tableCols.forEach(c => {{
-    const th = document.createElement('th');
-    th.textContent = c;
-    thr.appendChild(th);
-  }});
-  thead.appendChild(thr);
-
-  const tbody = document.createElement('tbody');
-  tableData.forEach(row => {{
-    const tr = document.createElement('tr');
-    tableCols.forEach(c => {{
-      const td = document.createElement('td');
-      const val = row[c];
-      const lc = c.toLowerCase();
-
-      if (lc.includes('usd') || lc.includes('revenue') || lc.includes('spend') || lc.includes('value') || lc.includes('cost')) {{
-        td.textContent = (val === null || val === undefined) ? '–' : fmtMoney(val);
-      }} else if (lc.includes('invoice→paid') || lc.includes('conversion') || lc.includes('%')) {{
-        td.textContent = (val === null || val === undefined) ? '–' : fmtPct(val);
-      }} else if (c === 'CAC') {{
-        td.textContent = (val === null || val === undefined) ? '–' : Number(val).toFixed(3);
-      }} else if (c === 'Month') {{
-        td.textContent = val ?? '–';
-      }} else {{
-        td.textContent = (val === null || val === undefined) ? '–' : fmtInt(val);
-      }}
-      tr.appendChild(td);
-    }});
-    tbody.appendChild(tr);
-  }});
-
-  tbl.innerHTML = '';
-  tbl.appendChild(thead);
-  tbl.appendChild(tbody);
-}}
-renderTable();
-
-// CSV download
-function downloadCSV() {{
-  const rows = [tableCols.join(',')].concat(
-    tableData.map(r => tableCols.map(c => {{
-      let v = r[c];
-      if (v === null || v === undefined) v = '';
-      const s = String(v).replaceAll('"','""');
-      return (s.includes(',') || s.includes('"') || s.includes('\\n')) ? '"' + s + '"' : s;
-    }}).join(','))
-  );
-  const blob = new Blob([rows.join('\\n')], {{ type: 'text/csv;charset=utf-8;' }});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'mypulse_sales_dashboard_jan_feb_2026_usd.csv';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}}
-</script>
+<script src="data.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
-"""
-out_path="/mnt/data/mypulse_sales_dashboard_jan_feb_2026_usd.html"
-with open(out_path,"w",encoding="utf-8") as f:
-    f.write(html)
-out_path
