@@ -36,10 +36,12 @@
       margin: 0 auto;
       padding: 12px 22px 44px;
     }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(12, 1fr);
-      gap: 14px;
+    .section-title {
+      margin: 18px 4px 10px;
+      font-size: 13px;
+      color: var(--muted);
+      letter-spacing: 0.2px;
+      text-transform: uppercase;
     }
     .card {
       background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.04));
@@ -48,16 +50,6 @@
       box-shadow: var(--shadow);
       padding: 14px 14px;
       overflow: hidden;
-    }
-    .kpi-card { padding: 14px 16px; }
-    .kpi-label { color: var(--muted); font-size: 12px; margin-bottom: 6px; }
-    .kpi-value { font-size: 22px; font-weight: 700; letter-spacing: 0.2px; }
-    .section-title {
-      margin: 18px 4px 10px;
-      font-size: 13px;
-      color: var(--muted);
-      letter-spacing: 0.2px;
-      text-transform: uppercase;
     }
     .row {
       display:flex; justify-content:space-between; align-items:center; gap:10px;
@@ -82,52 +74,6 @@
       background: var(--accent);
       box-shadow: 0 0 0 4px rgba(195,83,234,0.18);
     }
-    .chart-wrap { height: 260px; }
-    .chart-wrap.small { height: 220px; }
-    .span-3 { grid-column: span 3; }
-    .span-4 { grid-column: span 4; }
-    .span-5 { grid-column: span 5; }
-    .span-6 { grid-column: span 6; }
-    .span-7 { grid-column: span 7; }
-    .span-8 { grid-column: span 8; }
-    .span-12 { grid-column: span 12; }
-    @media (max-width: 980px) {
-      .span-3,.span-4,.span-5,.span-6,.span-7,.span-8 { grid-column: span 12; }
-    }
-    table {
-      width:100%;
-      border-collapse: collapse;
-      font-size: 12px;
-      overflow: hidden;
-      border-radius: 14px;
-    }
-    thead th {
-      text-align: left;
-      padding: 10px 10px;
-      color: rgba(255,255,255,0.82);
-      background: rgba(255,255,255,0.06);
-      border-bottom: 1px solid var(--border);
-      position: sticky;
-      top: 0;
-    }
-    tbody td {
-      padding: 9px 10px;
-      border-bottom: 1px solid rgba(255,255,255,0.08);
-      color: rgba(255,255,255,0.88);
-      vertical-align: top;
-    }
-    tbody tr:hover td { background: rgba(255,255,255,0.04); }
-    .btn {
-      cursor: pointer;
-      border: 1px solid var(--border);
-      background: rgba(255,255,255,0.06);
-      color: rgba(255,255,255,0.88);
-      border-radius: 12px;
-      padding: 8px 10px;
-      font-size: 12px;
-    }
-    .btn:hover { background: rgba(255,255,255,0.10); }
-    .footer-note { margin-top:10px; color:var(--muted); font-size:12px; }
     .funnel-grid {
       display:grid;
       grid-template-columns: 1fr 1fr;
@@ -136,10 +82,17 @@
     @media (max-width: 980px) {
       .funnel-grid { grid-template-columns: 1fr; }
     }
+    .chart-wrap { height: 260px; }
+    .chart-wrap.small { height: 220px; }
     .divider {
       height: 1px;
       background: rgba(255,255,255,0.10);
       margin: 10px 0 8px;
+    }
+    .note {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 12px;
     }
   </style>
 </head>
@@ -177,65 +130,136 @@
     </div>
   </div>
 
-  <!-- KPI snapshots -->
-  <div class="section-title">KPI snapshot — February 2026</div>
-  <div class="grid" id="febCards"></div>
-
-  <div class="section-title">KPI snapshot — January 2026</div>
-  <div class="grid" id="janCards"></div>
-
-  <div class="section-title">Cumulative (Jan–Feb 2026)</div>
-  <div class="grid" id="cumCards"></div>
-
-  <div class="section-title">2-month comparison</div>
-  <div class="grid">
-    <div class="card span-7">
-      <div class="row">
-        <div class="badge"><span class="dot"></span><span>Total revenue (New + Renewals) vs Marketing spend</span></div>
-        <span class="pill">USD</span>
-      </div>
-      <div class="chart-wrap"><canvas id="totalRevenue"></canvas></div>
-    </div>
-
-    <div class="card span-5">
-      <div class="row">
-        <div class="badge"><span class="dot"></span><span>Revenue split</span></div>
-        <span class="pill">stacked</span>
-      </div>
-      <div class="chart-wrap"><canvas id="revenueSplit"></canvas></div>
-    </div>
-
-    <div class="card span-6">
-      <div class="row">
-        <div class="badge"><span class="dot"></span><span>Bookings by channel</span></div>
-        <span class="pill">stacked</span>
-      </div>
-      <div class="chart-wrap"><canvas id="bookedChannels"></canvas></div>
-    </div>
-
-    <div class="card span-6">
-      <div class="row">
-        <div class="badge"><span class="dot"></span><span>Rates</span></div>
-        <span class="pill">%</span>
-      </div>
-      <div class="chart-wrap"><canvas id="rates"></canvas></div>
-    </div>
-
-    <div class="card span-12">
-      <div class="row">
-        <div class="badge"><span class="dot"></span><span>Metrics table</span></div>
-        <button class="btn" onclick="downloadCSV()">Download CSV</button>
-      </div>
-      <div style="max-height: 440px; overflow:auto; border-radius: 14px; border:1px solid rgba(255,255,255,0.10)">
-        <table id="metricsTable"></table>
-      </div>
-      <div class="footer-note">Numbers reflect the values you provided in chat; currency is USD.</div>
-    </div>
+  <div class="note">
+    Funnel stages shown: <strong>Demo booked → Demo attended → Quotations → Invoices → Sales</strong>.
+    Values are shown for <strong>Quotations / Invoices / Sales</strong>.
   </div>
+
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script src="data.js"></script>
-<script src="app.js"></script>
+<script>
+const DATA = {
+  months: ["Jan 2026","Feb 2026"],
+  jan: {
+    funnel: { booked_for_month: 82, attended: 41 },
+    quotations: { count: 17, value: 4297.50 },
+    invoices: { count: 13, value: 3026.50 },
+    paid: { count: 11, revenue: 2445.50 }
+  },
+  feb: {
+    funnel: { booked_for_month: 115, attended: 54 },
+    quotations: { count: 23, value: 5032.50 },
+    invoices: { count: 11, value: 3535.25 },
+    paid: { count: 7, revenue: 2485.00 }
+  }
+};
+
+function fmtMoney(x) {
+  if (x === null || x === undefined || Number.isNaN(x)) return '–';
+  return '$' + Number(x).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+}
+function fmtInt(x) {
+  if (x === null || x === undefined || Number.isNaN(x)) return '–';
+  return Math.round(Number(x)).toLocaleString();
+}
+
+const jan = DATA.jan;
+const feb = DATA.feb;
+
+const funnelLabels = ['Demo booked', 'Demo attended', 'Quotations', 'Invoices', 'Sales'];
+const janQty = [jan.funnel.booked_for_month, jan.funnel.attended, jan.quotations.count, jan.invoices.count, jan.paid.count];
+const febQty = [feb.funnel.booked_for_month, feb.funnel.attended, feb.quotations.count, feb.invoices.count, feb.paid.count];
+
+const valueLabels = ['Quotations', 'Invoices', 'Sales'];
+const janVal = [jan.quotations.value, jan.invoices.value, jan.paid.revenue];
+const febVal = [feb.quotations.value, feb.invoices.value, feb.paid.revenue];
+
+// January — quantities (horizontal bars)
+new Chart(document.getElementById('funnelJanQty'), {
+  type: 'bar',
+  data: {
+    labels: funnelLabels,
+    datasets: [{ label: 'Quantity', data: janQty }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    indexAxis: 'y',
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: (ctx) => ' ' + ctx.label + ': ' + fmtInt(ctx.parsed.x) } }
+    },
+    scales: {
+      x: { ticks: { color: 'rgba(255,255,255,0.75)' }, grid: { color: 'rgba(255,255,255,0.08)' } },
+      y: { ticks: { color: 'rgba(255,255,255,0.85)' }, grid: { color: 'rgba(255,255,255,0.08)' } }
+    }
+  }
+});
+
+// January — values (vertical bars)
+new Chart(document.getElementById('funnelJanVal'), {
+  type: 'bar',
+  data: {
+    labels: valueLabels,
+    datasets: [{ label: 'Value (USD)', data: janVal }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: (ctx) => ' ' + ctx.label + ': ' + fmtMoney(ctx.parsed.y) } }
+    },
+    scales: {
+      x: { ticks: { color: 'rgba(255,255,255,0.75)' }, grid: { color: 'rgba(255,255,255,0.08)' } },
+      y: { ticks: { color: 'rgba(255,255,255,0.75)' }, grid: { color: 'rgba(255,255,255,0.08)' } }
+    }
+  }
+});
+
+// February — quantities (horizontal bars)
+new Chart(document.getElementById('funnelFebQty'), {
+  type: 'bar',
+  data: {
+    labels: funnelLabels,
+    datasets: [{ label: 'Quantity', data: febQty }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    indexAxis: 'y',
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: (ctx) => ' ' + ctx.label + ': ' + fmtInt(ctx.parsed.x) } }
+    },
+    scales: {
+      x: { ticks: { color: 'rgba(255,255,255,0.75)' }, grid: { color: 'rgba(255,255,255,0.08)' } },
+      y: { ticks: { color: 'rgba(255,255,255,0.85)' }, grid: { color: 'rgba(255,255,255,0.08)' } }
+    }
+  }
+});
+
+// February — values (vertical bars)
+new Chart(document.getElementById('funnelFebVal'), {
+  type: 'bar',
+  data: {
+    labels: valueLabels,
+    datasets: [{ label: 'Value (USD)', data: febVal }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: (ctx) => ' ' + ctx.label + ': ' + fmtMoney(ctx.parsed.y) } }
+    },
+    scales: {
+      x: { ticks: { color: 'rgba(255,255,255,0.75)' }, grid: { color: 'rgba(255,255,255,0.08)' } },
+      y: { ticks: { color: 'rgba(255,255,255,0.75)' }, grid: { color: 'rgba(255,255,255,0.08)' } }
+    }
+  }
+});
+</script>
 </body>
 </html>
