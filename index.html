@@ -361,7 +361,7 @@ const DATA = {
     paid: { count:3, revenue:693 },
     cac: 1537.2,
     renewals: { paid_count:0, revenue:0 },
-    plan: { booked:240, attended:144, conversion:0.60, cost_per_demo:55, paid_revenue:14000, paid_rate:0.40 },
+    plan: { booked:240, attended:144, conversion:0.60, cost_per_demo:55, paid_revenue:14000, paid_rate:0.40, paid_count:40 },
     stage_rates: { attended_to_quote:0.50, quote_to_invoice:0.45, attended_to_paid:0.14 }
   }
 };
@@ -453,7 +453,7 @@ renderCards('kpiMar', [
   ["Invoice → Paid (Mar)", fmtPct(mar.invoices.invoice_to_paid)]
 ]);
 
-const marPaidPlanCount = Math.round((mar.plan.attended ?? 0) * (mar.plan.paid_rate ?? 0));
+const marPaidPlanCount = mar.plan.paid_count;
 const marchProgressItems = [
   {
     label: "Paying customers",
