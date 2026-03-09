@@ -107,6 +107,27 @@
     }
     .btn:hover{background:rgba(255,255,255,.10)}
     .footer-note{margin-top:10px;color:var(--muted);font-size:12px}
+    .tabs{
+      display:flex;
+      gap:10px;
+      margin:0 22px 10px;
+      max-width:1180px;
+    }
+    .tab-btn{
+      cursor:pointer;
+      border:1px solid var(--border);
+      background:rgba(255,255,255,.04);
+      color:rgba(255,255,255,.88);
+      border-radius:12px;
+      padding:8px 12px;
+      font-size:12px;
+    }
+    .tab-btn.active{
+      background:rgba(255,255,255,.16);
+      color:#fff;
+    }
+    .tab-panel{display:none}
+    .tab-panel.active{display:block}
   </style>
 </head>
 
@@ -118,7 +139,13 @@
   </div>
 </header>
 
+<div class="tabs">
+  <button class="tab-btn active" data-tab="janfeb" onclick="setTab('janfeb')">Jan–Feb Dashboard</button>
+  <button class="tab-btn" data-tab="march" onclick="setTab('march')">March Performance</button>
+</div>
+
 <div class="container">
+  <div class="tab-panel active" id="tab-janfeb">
 
   <!-- FIRST HALF: FULL FUNNELS -->
   <div class="section-title">Full funnel (Jan vs Feb) — unified axes</div>
@@ -200,6 +227,60 @@
       <div class="footer-note">Currency is USD. Data is embedded in this HTML file.</div>
     </div>
   </div>
+  </div>
+
+  <div class="tab-panel" id="tab-march">
+    <div class="section-title">KPI snapshot — March 2026</div>
+    <div class="grid" id="kpiMar"></div>
+
+    <div class="section-title">March funnel — quantity + value</div>
+    <div class="grid">
+      <div class="card span-7">
+        <div class="row">
+          <div class="badge"><span class="dot"></span><span>March 2026 — Funnel</span></div>
+          <span class="pill">quantity + value</span>
+        </div>
+        <div class="chart-wrap"><canvas id="funnelMarQty"></canvas></div>
+        <div class="divider"></div>
+        <div class="chart-wrap small"><canvas id="funnelMarVal"></canvas></div>
+      </div>
+
+      <div class="card span-5">
+        <div class="row">
+          <div class="badge"><span class="dot"></span><span>Bookings by channel (March)</span></div>
+          <span class="pill">count</span>
+        </div>
+        <div class="chart-wrap"><canvas id="bookedMarChannels"></canvas></div>
+      </div>
+
+      <div class="card span-6">
+        <div class="row">
+          <div class="badge"><span class="dot"></span><span>March rates vs plan</span></div>
+          <span class="pill">%</span>
+        </div>
+        <div class="chart-wrap"><canvas id="marchRates"></canvas></div>
+      </div>
+
+      <div class="card span-6">
+        <div class="row">
+          <div class="badge"><span class="dot"></span><span>March value pipeline</span></div>
+          <span class="pill">USD</span>
+        </div>
+        <div class="chart-wrap"><canvas id="marchPipeline"></canvas></div>
+      </div>
+
+      <div class="card span-12">
+        <div class="row">
+          <div class="badge"><span class="dot"></span><span>March metrics table</span></div>
+          <button class="btn" onclick="downloadMarchCSV()">Download CSV</button>
+        </div>
+        <div style="max-height:440px;overflow:auto;border-radius:14px;border:1px solid rgba(255,255,255,.10)">
+          <table id="metricsTableMar"></table>
+        </div>
+        <div class="footer-note">Currency is USD. March values are based on provided input.</div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
@@ -231,11 +312,26 @@ const DATA = {
     cac: 1.269,
     renewals: { paid_count:3, revenue:434.00 },
     churn: 5
+  },
+  mar: {
+    booked_channels: { "Telemarketing":6, "Ibragim":6, "Marketing Agency":28 },
+    total_booked: 40, plan_booked: 240, pct_plan_booked: 0.1667,
+    lead_cost: { "Telemarketing":295.8, "Ibragim":145.8, "Marketing Agency":69.9 },
+    marketing_spend: 4611.6,
+    funnel: { booked_for_month:48, attended:22, conversion:0.46, cost_per_demo:306 },
+    quotations: { count:11, value:4117 },
+    invoices: { count:5, value:1994, invoice_to_paid:0.45 },
+    paid: { count:3, revenue:693 },
+    cac: 1537.2,
+    renewals: { paid_count:0, revenue:0 },
+    plan: { booked:240, attended:144, conversion:0.60, cost_per_demo:55, paid_revenue:14000 },
+    stage_rates: { attended_to_quote:0.50, quote_to_invoice:0.45, attended_to_paid:0.14 }
   }
 };
 
 const jan = DATA.jan;
 const feb = DATA.feb;
+const mar = DATA.mar;
 
 function safeDiv(a,b){ return (!b || b===0) ? null : (a/b); }
 function totalRevenue(m){ return m.paid.revenue + m.renewals.revenue; }
@@ -306,6 +402,16 @@ renderCards('kpiCum', [
   ["Sales (Jan–Feb)", fmtInt(cum.sales_count)]
 ]);
 
+renderCards('kpiMar', [
+  ["Total revenue (Mar)", fmtMoney(totalRevenue(mar))],
+  ["New revenue (Mar)", fmtMoney(mar.paid.revenue)],
+  ["Renewals (Mar)", fmtMoney(mar.renewals.revenue)],
+  ["Avg check (Mar)", fmtMoney(avgCheckNewSales(mar))],
+  ["Demo booked (Mar)", fmtInt(mar.funnel.booked_for_month)],
+  ["Demo attended (Mar)", fmtInt(mar.funnel.attended)],
+  ["Invoice → Paid (Mar)", fmtPct(mar.invoices.invoice_to_paid)]
+]);
+
 /** ===== UNIFIED AXES LIMITS (requested) ===== */
 const FUNNEL_X_MAX = 120;   // top funnel x-axis max
 const VALUE_Y_MAX  = 6000;  // bottom value y-axis max
@@ -318,6 +424,8 @@ const febQty = [feb.funnel.booked_for_month, feb.funnel.attended, feb.quotations
 const valLabels = ['Quotations', 'Invoices', 'Sales'];
 const janVal = [jan.quotations.value, jan.invoices.value, jan.paid.revenue];
 const febVal = [feb.quotations.value, feb.invoices.value, feb.paid.revenue];
+const marQty = [mar.funnel.booked_for_month, mar.funnel.attended, mar.quotations.count, mar.invoices.count, mar.paid.count];
+const marVal = [mar.quotations.value, mar.invoices.value, mar.paid.revenue];
 
 // January — quantities (horizontal) unified X max=120
 new Chart(document.getElementById('funnelJanQty'),{
@@ -374,6 +482,38 @@ new Chart(document.getElementById('funnelJanVal'),{
 new Chart(document.getElementById('funnelFebVal'),{
   type:'bar',
   data:{ labels:valLabels, datasets:[{ label:'Value (USD)', data:febVal }] },
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    plugins:{
+      legend:{display:false},
+      tooltip:{callbacks:{label:(c)=>` ${c.label}: ${fmtMoney(c.parsed.y)}`}}
+    },
+    scales:{
+      x:{ ticks:{color:'rgba(255,255,255,.75)'}, grid:{color:'rgba(255,255,255,.08)'} },
+      y:{ min:0, max:VALUE_Y_MAX, ticks:{color:'rgba(255,255,255,.75)'}, grid:{color:'rgba(255,255,255,.08)'} }
+    }
+  }
+});
+
+new Chart(document.getElementById('funnelMarQty'),{
+  type:'bar',
+  data:{ labels:funnelLabels, datasets:[{ label:'Quantity', data:marQty }] },
+  options:{
+    responsive:true, maintainAspectRatio:false, indexAxis:'y',
+    plugins:{
+      legend:{display:false},
+      tooltip:{callbacks:{label:(c)=>` ${c.label}: ${fmtInt(c.parsed.x)}`}}
+    },
+    scales:{
+      x:{ min:0, max:FUNNEL_X_MAX, ticks:{color:'rgba(255,255,255,.75)'}, grid:{color:'rgba(255,255,255,.08)'} },
+      y:{ ticks:{color:'rgba(255,255,255,.85)'}, grid:{color:'rgba(255,255,255,.08)'} }
+    }
+  }
+});
+
+new Chart(document.getElementById('funnelMarVal'),{
+  type:'bar',
+  data:{ labels:valLabels, datasets:[{ label:'Value (USD)', data:marVal }] },
   options:{
     responsive:true, maintainAspectRatio:false,
     plugins:{
@@ -481,6 +621,74 @@ new Chart(document.getElementById('rates'),{
   }
 });
 
+new Chart(document.getElementById('bookedMarChannels'),{
+  type:'bar',
+  data:{
+    labels:Object.keys(mar.booked_channels),
+    datasets:[{
+      label:'Booked',
+      data:Object.values(mar.booked_channels)
+    }]
+  },
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{display:false} },
+    scales:{
+      x:{ticks:{color:'rgba(255,255,255,.75)'}, grid:{color:'rgba(255,255,255,.08)'}},
+      y:{ticks:{color:'rgba(255,255,255,.75)'}, grid:{color:'rgba(255,255,255,.08)'}}
+    }
+  }
+});
+
+new Chart(document.getElementById('marchRates'),{
+  type:'bar',
+  data:{
+    labels:['Demo conversion','Invoice → Paid'],
+    datasets:[
+      { label:'March actual', data:[mar.funnel.conversion, mar.invoices.invoice_to_paid] },
+      { label:'March plan', data:[mar.plan.conversion, 0.40] }
+    ]
+  },
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    plugins:{
+      legend:{labels:{color:'rgba(255,255,255,.85)'}},
+      tooltip:{callbacks:{label:(c)=>`${c.dataset.label}: ${fmtPct(c.parsed.y)}`}}
+    },
+    scales:{
+      x:{ticks:{color:'rgba(255,255,255,.75)'}, grid:{color:'rgba(255,255,255,.08)'}},
+      y:{
+        min:0, max:1,
+        ticks:{color:'rgba(255,255,255,.75)', callback:(v)=>`${(v*100).toFixed(0)}%`},
+        grid:{color:'rgba(255,255,255,.08)'}
+      }
+    }
+  }
+});
+
+new Chart(document.getElementById('marchPipeline'),{
+  type:'line',
+  data:{
+    labels:['Quotations','Invoices','Paid'],
+    datasets:[{
+      label:'Value (USD)',
+      data:[mar.quotations.value, mar.invoices.value, mar.paid.revenue],
+      tension:.2
+    }]
+  },
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    plugins:{
+      legend:{labels:{color:'rgba(255,255,255,.85)'}},
+      tooltip:{callbacks:{label:(c)=>`${c.dataset.label}: ${fmtMoney(c.parsed.y)}`}}
+    },
+    scales:{
+      x:{ticks:{color:'rgba(255,255,255,.75)'}, grid:{color:'rgba(255,255,255,.08)'}},
+      y:{ticks:{color:'rgba(255,255,255,.75)'}, grid:{color:'rgba(255,255,255,.08)'}}
+    }
+  }
+});
+
 /** ===== TABLE + CSV ===== */
 const tableCols = [
   "Month","Demo booked","Demo attended",
@@ -577,6 +785,70 @@ function renderTable(){
 }
 renderTable();
 
+const marchTableRows = [
+  ["Booked total", mar.total_booked, mar.plan.booked, mar.pct_plan_booked],
+  ["Booked for month", mar.funnel.booked_for_month, mar.plan.booked, safeDiv(mar.funnel.booked_for_month, mar.plan.booked)],
+  ["Attended", mar.funnel.attended, mar.plan.attended, safeDiv(mar.funnel.attended, mar.plan.attended)],
+  ["Conversion", mar.funnel.conversion, mar.plan.conversion, safeDiv(mar.funnel.conversion, mar.plan.conversion)],
+  ["Cost per demo", mar.funnel.cost_per_demo, mar.plan.cost_per_demo, safeDiv(mar.funnel.cost_per_demo, mar.plan.cost_per_demo)],
+  ["Quotations", mar.quotations.value, null, null],
+  ["Invoices", mar.invoices.value, null, null],
+  ["Paid", mar.paid.revenue, mar.plan.paid_revenue, safeDiv(mar.paid.revenue, mar.plan.paid_revenue)]
+];
+
+function renderMarchTable(){
+  const tbl = document.getElementById('metricsTableMar');
+  const cols = ["Metric","Actual","Plan","Progress"];
+  const thead = document.createElement('thead');
+  const trh = document.createElement('tr');
+  cols.forEach(c=>{
+    const th=document.createElement('th');
+    th.textContent=c;
+    trh.appendChild(th);
+  });
+  thead.appendChild(trh);
+
+  const tbody=document.createElement('tbody');
+  marchTableRows.forEach(([metric,actual,plan,progress])=>{
+    const tr=document.createElement('tr');
+    const tdMetric=document.createElement('td');
+    tdMetric.textContent=metric;
+    tr.appendChild(tdMetric);
+
+    const tdActual=document.createElement('td');
+    if (metric === 'Conversion') tdActual.textContent = fmtPct(actual);
+    else if (metric === 'Booked total' || metric === 'Booked for month' || metric === 'Attended') tdActual.textContent = fmtInt(actual);
+    else tdActual.textContent = fmtMoney(actual);
+    tr.appendChild(tdActual);
+
+    const tdPlan=document.createElement('td');
+    if (plan===null || plan===undefined) tdPlan.textContent='–';
+    else if (metric === 'Conversion') tdPlan.textContent = fmtPct(plan);
+    else if (metric === 'Booked total' || metric === 'Booked for month' || metric === 'Attended') tdPlan.textContent = fmtInt(plan);
+    else tdPlan.textContent = fmtMoney(plan);
+    tr.appendChild(tdPlan);
+
+    const tdProgress=document.createElement('td');
+    tdProgress.textContent = (progress===null || progress===undefined) ? '–' : fmtPct(progress);
+    tr.appendChild(tdProgress);
+
+    tbody.appendChild(tr);
+  });
+
+  tbl.innerHTML='';
+  tbl.appendChild(thead);
+  tbl.appendChild(tbody);
+}
+renderMarchTable();
+
+function setTab(tab){
+  document.querySelectorAll('.tab-btn').forEach(btn=>{
+    btn.classList.toggle('active', btn.dataset.tab === tab);
+  });
+  document.getElementById('tab-janfeb').classList.toggle('active', tab === 'janfeb');
+  document.getElementById('tab-march').classList.toggle('active', tab === 'march');
+}
+
 function downloadCSV(){
   const rows=[tableCols.join(',')].concat(
     tableData.map(r=>tableCols.map(c=>{
@@ -591,6 +863,32 @@ function downloadCSV(){
   const a=document.createElement('a');
   a.href=url;
   a.download='mypulse_sales_dashboard_jan_feb_2026_usd.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function downloadMarchCSV(){
+  const rows=[["Metric","Actual","Plan","Progress"].join(',')].concat(
+    marchTableRows.map(([metric,actual,plan,progress])=>{
+      const values = [
+        metric,
+        actual ?? '',
+        plan ?? '',
+        (progress===null || progress===undefined) ? '' : progress
+      ];
+      return values.map(v=>{
+        const s=String(v).replaceAll('"','""');
+        return (s.includes(',')||s.includes('"')||s.includes('\n')) ? `"${s}"` : s;
+      }).join(',');
+    })
+  );
+  const blob=new Blob([rows.join('\n')],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download='mypulse_sales_dashboard_march_2026_usd.csv';
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
