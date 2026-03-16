@@ -454,6 +454,7 @@ renderCards('kpiMar', [
 ]);
 
 const marPaidPlanCount = mar.plan.paid_count;
+const marInvoiceToPaidForChart = safeDiv(mar.paid.count, 11);
 const marchProgressItems = [
   {
     label: "Paying customers",
@@ -463,10 +464,10 @@ const marchProgressItems = [
     format: fmtInt
   },
   {
-    label: "Revenue (new sales)",
-    actual: mar.paid.revenue,
+    label: "Revenue (new + renewals)",
+    actual: totalRevenue(mar),
     plan: mar.plan.paid_revenue,
-    ratio: safeDiv(mar.paid.revenue, mar.plan.paid_revenue),
+    ratio: safeDiv(totalRevenue(mar), mar.plan.paid_revenue),
     format: fmtMoney
   },
   {
@@ -726,7 +727,7 @@ new Chart(document.getElementById('marchRates'),{
   data:{
     labels:['Demo conversion','Invoice → Paid'],
     datasets:[
-      { label:'March actual', data:[mar.funnel.conversion, mar.invoices.invoice_to_paid] },
+      { label:'March actual', data:[mar.funnel.conversion, marInvoiceToPaidForChart] },
       { label:'March plan', data:[mar.plan.conversion, mar.plan.paid_rate] }
     ]
   },
